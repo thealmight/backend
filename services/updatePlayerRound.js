@@ -1,6 +1,5 @@
 // services/updatePlayerRound.js
 const db = require('../db'); // adjust if you're using Supabase or another client
-const { notifyClients } = require('../utils/realtime'); // optional: for Socket.IO or Supabase triggers
 
 /**
  * Updates the player's round number in the database.
@@ -27,12 +26,6 @@ async function updatePlayerRound(userId, roundNumber) {
     if (result.rowCount === 0) {
       throw new Error(`Player with userId ${userId} not found`);
     }
-
-    // Optional: notify frontend clients of round update
-    await notifyClients('roundUpdated', {
-      userId,
-      roundNumber,
-    });
 
     return result.rows[0];
   } catch (err) {
