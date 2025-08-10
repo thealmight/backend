@@ -40,11 +40,8 @@ app.use('/api/submissions', submissionRoutes);
 app.use('/api/supply', supplyRoutes);
 app.use('/api', gameDataRoutes);
 app.use('/api', testRoundRoutes); 
-app.use(express.json()); // Required to parse req.body
-
-const gameRoutes = require('./routes/gameRoutes'); // adjust path if needed
-app.use('/api', gameRoutes);// Mounts at /api/test-round
-// app.use('/api', testRoutes); // Remove if not needed
+app.use(express.json()); 
+app.use('/api', gameRoutes);
 
 // ----- General Routes -----
 app.get('/', (req, res) => {
