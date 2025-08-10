@@ -2,10 +2,7 @@ const express = require('express');
 const { authenticateToken, requireOperator, requirePlayer } = require('./authRouter');
 const gameController = require('../controllers/gameController');
 const tariffController = require('../controllers/tariffController');
-const { updatePlayerRoundHandler } = require('../controllers/roundController');
-
-console.log('🔍 typeof updatePlayerRoundHandler:', typeof updatePlayerRoundHandler);
-console.log('🔍 updatePlayerRoundHandler:', updatePlayerRoundHandler); // Show full object
+const roundController = require('../controllers/roundController');
 
 const router = express.Router();
 
@@ -16,7 +13,7 @@ router.post('/:gameId/start', authenticateToken, requireOperator, gameController
 router.post('/:gameId/next-round', authenticateToken, requireOperator, gameController.startNextRound);
 router.post('/:gameId/end', authenticateToken, requireOperator, gameController.endGame);
 router.post('/:gameId/reset', authenticateToken, requireOperator, gameController.resetGame);
-router.post('/update-round', authenticateToken, updatePlayerRoundHandler);
+router.post('/update-round', authenticateToken, roundController.updatePlayerRoundHandler);
 
 
 //
