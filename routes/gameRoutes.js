@@ -3,6 +3,11 @@ const { authenticateToken, requireOperator, requirePlayer } = require('./authRou
 const gameController = require('../controllers/gameController');
 const tariffController = require('../controllers/tariffController');
 const roundController = require('../controllers/roundController');
+console.log('🧪 typeof gameController.createGame:', typeof gameController.createGame);
+console.log('🧪 typeof gameController.startGame:', typeof gameController.startGame);
+console.log('🧪 typeof gameController.startNextRound:', typeof gameController.startNextRound);
+console.log('🧪 typeof gameController.endGame:', typeof gameController.endGame);
+console.log('🧪 typeof gameController.resetGame:', typeof gameController.resetGame);
 
 const router = express.Router();
 
