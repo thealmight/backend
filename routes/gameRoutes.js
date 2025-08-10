@@ -3,7 +3,7 @@ const { authenticateToken, requireOperator, requirePlayer } = require('./authRou
 const gameController = require('../controllers/gameController');
 const tariffController = require('../controllers/tariffController');
 const { updatePlayerRoundHandler } = require('../controllers/roundController');
-const { updatePlayerRoundHandler } = require('../controllers/roundController');
+
 console.log('🔍 typeof updatePlayerRoundHandler:', typeof updatePlayerRoundHandler);
 console.log('🔍 updatePlayerRoundHandler:', updatePlayerRoundHandler); // Show full object
 
