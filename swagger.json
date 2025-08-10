@@ -1,0 +1,28 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Econ Empire API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/games/create": {
+      "post": {
+        "summary": "Create a new game",
+        "responses": {
+          "200": { "description": "Game created" }
+        }
+      }
+    },
+    "/games/{gameId}/start": {
+      "post": {
+        "summary": "Start the game",
+        "parameters": [
+          { "name": "gameId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Game started" }
+        }
+      }
+    }
+  }
+}
