@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticateToken, requireOperator, requirePlayer } = require('./authRouter');
+const { authenticateToken, requireOperator, requirePlayer } = require('../middleware/authMiddleware');
 const gameController = require('../controllers/gameController');
 const tariffController = require('../controllers/tariffController');
 const roundController = require('../controllers/roundController');
