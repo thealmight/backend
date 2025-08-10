@@ -13,4 +13,6 @@ async function updatePlayerRoundHandler(req, res) {
   }
 }
 
-module.exports = { updatePlayerRoundHandler };
+module.exports = {
+  updatePlayerRoundHandler
+};
