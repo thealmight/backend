@@ -1,6 +1,6 @@
 // routes/gameRoutes.js
 const express = require('express');
-const { authenticateToken, requireOperator, requirePlayer } = require('./auth');
+const { authenticateToken, requireOperator, requirePlayer } = require('./authRouter');
 const gameController = require('../controllers/gameController');
 const tariffController = require('../controllers/tariffController');
 
