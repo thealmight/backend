@@ -244,3 +244,31 @@ exports.getPlayerGameData = async (req, res) => {
     res.status(500).json({ error: 'Failed to get player game data' });
   }
 };
+exports.resetGame = async (req, res) => {
+  try {
+    const { gameId } = req.params;
+
+    // Optional: validate operator access
+    const profile = await getSupabaseProfile(req);
+    if (!profile || profile.role !== 'operator') {
+      return res.status(403).json({ error: 'Only the operator can reset the game.' });
+    }
+
+    // Reset game status and round
+    const { error: updateError } = await supabase
+      .from('games')
+      .update({ status: 'waiting', current_round: 1 })
+      .eq('id', gameId);
+
+    if (updateError) throw updateError;
+
+    // Optional: reinitialize game data
+    const initSuccess = await initializeGameData(gameId, COUNTRIES, 1);
+    if (!initSuccess) return res.status(500).json({ error: 'Failed to reinitialize game data' });
+
+    res.json({ success: true, message: 'Game reset successfully' });
+  } catch (error) {
+    console.error('❌ Reset game error:', error);
+    res.status(500).json({ error: 'Failed to reset game' });
+  }
+};
