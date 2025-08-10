@@ -38,10 +38,8 @@ app.use('/api/players', playerRoutes);
 app.use('/api/production', productionRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/supply', supplyRoutes);
-app.use('/api', gameDataRoutes);
-app.use('/api', testRoundRoutes); 
-app.use(express.json()); 
-app.use('/api', gameRoutes);
+app.use('/api/gamedata', gameDataRoutes); // More specific path
+app.use('/api/test-round', testRoundRoutes); // More specific path
 
 // ----- General Routes -----
 app.get('/', (req, res) => {
