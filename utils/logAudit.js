@@ -1,5 +1,5 @@
 // utils/logAudit.js
-const supabase = require('../supabase/client');
+const supabase = require('../db');
 
 /**
  * Logs an audit event to Supabase
