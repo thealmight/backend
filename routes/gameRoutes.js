@@ -11,13 +11,13 @@ const router = express.Router();
 
 //
 // 🎮 Game Management Routes (Operator Only)
-//
 router.post('/create', authenticateToken, requireOperator, gameController.createGame);
 router.post('/:gameId/start', authenticateToken, requireOperator, gameController.startGame);
 router.post('/:gameId/next-round', authenticateToken, requireOperator, gameController.startNextRound);
 router.post('/:gameId/end', authenticateToken, requireOperator, gameController.endGame);
 router.post('/:gameId/reset', authenticateToken, requireOperator, gameController.resetGame);
-router.post('/update-round', updatePlayerRoundHandler);
+router.post('/update-round', authenticateToken, updatePlayerRoundHandler);
+
 
 //
 // 📊 Game Data Routes
