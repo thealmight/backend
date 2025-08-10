@@ -5,6 +5,7 @@ const gameController = require('../controllers/gameController');
 const tariffController = require('../controllers/tariffController');
 
 const router = express.Router();
+const { updatePlayerRoundHandler } = require('../controllers/roundController');
 
 //
 // 🎮 Game Management Routes (Operator Only)
@@ -15,6 +16,7 @@ router.post('/:gameId/next-round', authenticateToken, requireOperator, gameContr
 router.post('/:gameId/end', authenticateToken, requireOperator, gameController.endGame);
 router.post('/:gameId/reset', authenticateToken, requireOperator, gameController.resetGame);
 
+router.post('/update-round', updatePlayerRoundHandler);
 //
 // 📊 Game Data Routes
 //

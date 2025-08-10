@@ -1,20 +1,16 @@
-// services/updatePlayerRound.js
-const supabase = require('../db');
+// controllers/roundController.js
+const { updatePlayerRound } = require('../services/updatePlayerRound');
 
-/**
- * Updates the current round for a player in the database.
- * @param {string} userId - Supabase user ID
- * @param {number} roundNumber - New round number
- */
-async function updatePlayerRound(userId, roundNumber) {
-  const { error } = await supabase
-    .from('users')
-    .update({ current_round: roundNumber })
-    .eq('id', userId);
+async function updatePlayerRoundHandler(req, res) {
+  const { userId, roundNumber } = req.body;
 
-  if (error) {
-    console.error(`❌ Failed to update round for user ${userId}`, error);
+  try {
+    await updatePlayerRound(userId, roundNumber);
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('❌ Error updating round:', err);
+    res.status(500).json({ error: 'Failed to update round' });
   }
 }
 
-module.exports = { updatePlayerRound };
+module.exports = { updatePlayerRoundHandler };
