@@ -33,7 +33,7 @@ app.use(morgan('dev'));
 app.use('/api/auth', authRoutes);
 app.use('/api/game', gameRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/chat', chatRoutes);
+// app.use('/api/chat', chatRoutes);
 app.use('/api/tariff', tariffRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/production', productionRoutes);
