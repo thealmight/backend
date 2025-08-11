@@ -1,14 +1,13 @@
-// controllers/userController.js
-
 const supabase = require('../db');
 const getSupabaseUser = require('../services/getSupabaseUser');
-const { updatePlayerRound } = require('../services/updatePlayerRound');
 
-// 👤 Get or create user profile (after frontend login)
-exports.getOrCreateProfile = async (req, res) => {
+// 👤 Login or create user profile
+exports.loginUser = async (req, res) => {
   try {
     const supaUser = await getSupabaseUser(req);
-    if (!supaUser) return res.status(401).json({ error: 'Invalid or missing Supabase Auth token.' });
+    if (!supaUser) {
+      return res.status(401).json({ error: 'Invalid or missing Supabase Auth token.' });
+    }
 
     let { data: profile } = await supabase
       .from('users')
@@ -33,8 +32,8 @@ exports.getOrCreateProfile = async (req, res) => {
 
     res.status(200).json(profile);
   } catch (err) {
-    console.error('❌ Auth/profile error:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('❌ Login error:', err.message);
+    res.status(500).json({ error: 'Failed to login or fetch profile' });
   }
 };
 
@@ -54,7 +53,10 @@ exports.getAllUsers = async (req, res) => {
       return res.status(403).json({ error: 'Access denied. Operator only.' });
     }
 
-    const { data: users, error } = await supabase.from('users').select('*');
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, username, email, role, country, is_online');
+
     if (error) throw error;
 
     res.json(users);
