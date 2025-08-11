@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const chatController = require('../controllers/chatController');
 const { authMiddleware } = require('../middleware/authMiddleware');
+console.log('🔍 chatController:', chatController);
 
-console.log('📨 Chat routes initialized');
+// console.log('📨 Chat routes initialized');
 
 /**
  * POST /chat/message
