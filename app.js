@@ -7,7 +7,6 @@ const morgan = require('morgan');
 const { router: authRoutes } = require('./routes/authRouter');
 const gameRoutes = require('./routes/gameRoutes');
 const userRoutes = require('./routes/userRoutes');
-const chatRoutes = require('./routes/chatRoutes');
 const tariffRoutes = require('./routes/tariffRoutes');
 const gameDataRoutes = require('./routes/gameDataRoutes');
 const playerRoutes = require('./routes/playerRoutes');
