@@ -15,6 +15,8 @@ const productionRoutes = require('./routes/productionRoutes');
 const submissionRoutes = require('./routes/submissionRoutes');
 const supplyRoutes = require('./routes/supplyRoutes');
 const testRoundRoutes = require('./routes/testRoundRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+
 // const testRoutes = require('./routes/test'); // Uncomment if needed
 
 const app = express();
@@ -40,6 +42,7 @@ app.use('/api/submissions', submissionRoutes);
 app.use('/api/supply', supplyRoutes);
 app.use('/api/gamedata', gameDataRoutes); // More specific path
 app.use('/api/test-round', testRoundRoutes); // More specific path
+app.use('/chat', chatRoutes);
 
 // ----- General Routes -----
 app.get('/', (req, res) => {
