@@ -1,72 +1,37 @@
-// controllers/chatController.js
+const supabase = require('../db'); // or wherever your Supabase client lives
 
-const insertChatMessage = require('../services/insertChatMessage');
-const fetchChatMessages = require('../services/fetchChatMessages');
-const { updatePlayerRound } = require('../services/updatePlayerRound');
+/**
+ * Initializes chat socket listeners for a connected client.
+ * @param {Socket} socket - The connected socket instance.
+ * @param {Server} io - The Socket.IO server instance.
+ */
+function initializeChatSocket(socket, io) {
+  socket.on('chat:send', async ({ gameId, message }) => {
+    try {
+      const senderId = socket.user?.id;
+      const senderCountry = socket.user?.country;
 
-// POST /api/chat/message
-exports.sendMessage = async (req, res) => {
-  try {
-    const sender_id = req.user.id;
-    const sender_country = req.user.country;
-    const { game_id, message_type, recipient_country, content, nextRound } = req.body;
+      if (!senderId || !gameId || !message) {
+        return socket.emit('error', { message: 'Missing required fields' });
+      }
 
-    if (!sender_id || !sender_country) {
-      return res.status(401).json({ error: 'Sender authentication required' });
+      const chatEntry = {
+        game_id: gameId,
+        sender_id: senderId,
+        sender_country: senderCountry,
+        message_type: 'text',
+        content: message,
+        timestamp: new Date().toISOString()
+      };
+
+      await supabase.from('chat_messages').insert([chatEntry]);
+
+      io.to(`country_${senderCountry}`).emit('chat:receive', chatEntry);
+    } catch (err) {
+      console.error('❌ Socket chat:send error:', err.message);
+      socket.emit('error', { message: 'Failed to send message' });
     }
+  });
+}
 
-    if (!game_id || !message_type || !content) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    const data = await insertChatMessage({
-      game_id,
-      sender_id,
-      sender_country,
-      message_type,
-      recipient_country,
-      content
-    });
-
-    // Optional: Update player round if provided
-    if (nextRound) {
-      await updatePlayerRound(sender_id, nextRound);
-    }
-
-    // Emit real-time chat message to recipient's country room
-    const io = req.app.get('io');
-    if (io && recipient_country) {
-      io.to(`country_${recipient_country}`).emit('chat:newMessage', data);
-    }
-
-    res.json(data);
-  } catch (error) {
-    console.error('Error in sendMessage:', error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// GET /api/chat/:gameId
-exports.getMessages = async (req, res) => {
-  try {
-    const data = await fetchChatMessages(req.params.gameId);
-    res.json(data);
-  } catch (error) {
-    console.error('Error in getMessages:', error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// socket/chatSocket.js
-socket.on('chat:send', async ({ gameId, message }) => {
-  const senderId = socket.user.id;
-
-  await supabase.from('chat_messages').insert([{
-    game_id: gameId,
-    sender_id: senderId,
-    message,
-    timestamp: new Date().toISOString()
-  }]);
-
-  io.to(gameId).emit('chat:receive', { senderId, message });
-});
+module.exports = initializeChatSocket;

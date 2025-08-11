@@ -5,11 +5,13 @@ const http = require('http');
 const socketIo = require('socket.io');
 const supabase = require('./db');
 const { logAudit } = require('./utils/logAudit');
-const app = require('./app'); // Import the configured Express app
+const emitGameData = require('./utils/emitGameData');
+const app = require('./app');
 
 const chatSocket = require('./sockets/chatSocket');
 const gameSocket = require('./sockets/gameSocket');
-const tradeSocket = require('./sockets/tradeSocket'); // New module
+const tradeSocket = require('./sockets/tradeSocket');
+
 const server = http.createServer(app);
 
 const io = socketIo(server, {
@@ -49,29 +51,16 @@ io.use(async (socket, next) => {
   }
 });
 
-// ---- PLUG IN SOCKET MODULES ----
-chatSocket(io);
-gameSocket(io);
-tradeSocket(io); // Handles trade proposals
-
 // ---- CORE CONNECTION HANDLER ----
 io.on('connection', async (socket) => {
   console.log(`🔌 ${socket.username} (${socket.role}) connected from ${socket.country}`);
-  
- const emitGameData = require('./utils/emitGameData');
 
-  socket.on('refreshGameData', async ({ gameId }) => {
-    if (!gameId || gameId !== socket.gameId) {
-      return socket.emit('error', { message: 'Invalid or unauthorized gameId' });
-    }
+  // Join rooms
+  socket.join(`country_${socket.country}`);
+  socket.join(`game_${socket.gameId}`);
+  if (socket.role === 'operator') socket.join('operators');
 
-    try {
-      await emitGameData(io, gameId);
-    } catch (err) {
-      console.error('Failed to emit game data:', err.message);
-      socket.emit('error', { message: 'Failed to refresh game data' });
-    }
-  });
+  // Update online status
   try {
     await supabase
       .from('users')
@@ -95,14 +84,12 @@ io.on('connection', async (socket) => {
     console.error('Error updating user status:', error);
   }
 
-  // Room management
-  socket.join(`country_${socket.country}`);
-  socket.join(`game_${socket.gameId}`);
-  if (socket.role === 'operator') socket.join('operators');
+  // 🔌 Plug in modular socket handlers
+  chatSocket(socket, io);
+  gameSocket(socket, io);
+  tradeSocket(socket, io);
 
-  //
   // 🔁 Reconnect resilience
-  //
   socket.on('reconnectRequest', ({ userId, gameId, country }) => {
     socket.userId = userId;
     socket.gameId = gameId;
@@ -112,9 +99,7 @@ io.on('connection', async (socket) => {
     socket.emit('reconnected', { success: true });
   });
 
-  //
   // 💰 Tariff update broadcast
-  //
   socket.on('tariffUpdate', async (data) => {
     try {
       const updateData = {
@@ -133,9 +118,7 @@ io.on('connection', async (socket) => {
     }
   });
 
-  //
   // 🕒 Round timer update
-  //
   socket.on('roundTimerUpdate', async (data) => {
     if (socket.role !== 'operator') {
       return socket.emit('error', { message: 'Only operators can update round timer' });
@@ -143,7 +126,6 @@ io.on('connection', async (socket) => {
 
     try {
       await logAudit(socket.userId, 'round_timer_update', data);
-
       io.to(`game_${socket.gameId}`).emit('roundTimerUpdated', {
         ...data,
         updatedAt: new Date()
@@ -153,9 +135,7 @@ io.on('connection', async (socket) => {
     }
   });
 
-  //
   // 🎮 Game state update
-  //
   socket.on('gameStateUpdate', async (data) => {
     if (socket.role !== 'operator') {
       return socket.emit('error', { message: 'Only operators can update game state' });
@@ -163,7 +143,6 @@ io.on('connection', async (socket) => {
 
     try {
       await logAudit(socket.userId, 'game_state_update', data);
-
       io.to(`game_${socket.gameId}`).emit('gameStateChanged', {
         ...data,
         updatedBy: socket.username,
@@ -174,9 +153,21 @@ io.on('connection', async (socket) => {
     }
   });
 
-  //
+  // 🔄 Game data refresh
+  socket.on('refreshGameData', async ({ gameId }) => {
+    if (!gameId || gameId !== socket.gameId) {
+      return socket.emit('error', { message: 'Invalid or unauthorized gameId' });
+    }
+
+    try {
+      await emitGameData(io, gameId);
+    } catch (err) {
+      console.error('Failed to emit game data:', err.message);
+      socket.emit('error', { message: 'Failed to refresh game data' });
+    }
+  });
+
   // 🔌 Disconnect handler
-  //
   socket.on('disconnect', async () => {
     console.log(`👋 ${socket.username} disconnected`);
     try {
@@ -196,9 +187,7 @@ io.on('connection', async (socket) => {
     }
   });
 
-  //
   // ⚠️ Error event
-  //
   socket.on('error', (error) => {
     console.error('Socket error:', error);
   });
