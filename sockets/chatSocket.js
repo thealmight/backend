@@ -1,50 +1,59 @@
 const supabase = require('../db');
 
 /**
- * Initializes chat socket listeners for a connected client.
- * @param {Socket} socket - The connected socket instance.
- * @param {Server} io - The Socket.IO server instance.
+ * Handles real-time chat events for a connected socket.
+ * @param {Socket} socket - The connected user's socket
+ * @param {Server} io - The Socket.IO server instance
  */
-function initializeChatSocket(socket, io) {
-  console.log(`💬 Chat socket initialized for ${socket.username} (${socket.country})`);
+module.exports = function chatSocket(socket, io) {
+  // 📨 Handle incoming chat message
+  socket.on('chat:send', async ({ content }) => {
+    const { gameId, userId, country, username } = socket;
 
-  socket.on('chat:send', async ({ gameId, message }) => {
-    console.log('📥 chat:send received:', { gameId, message });
+    if (!content || !gameId || !userId || !country) {
+      return socket.emit('error', { message: 'Missing required chat fields' });
+    }
 
-    try {
-      const senderId = socket.userId || socket.user?.id;
-      const senderCountry = socket.country || socket.user?.country;
+    const message = {
+      game_id: gameId,
+      sender_id: userId,
+      sender_country: country,
+      sender_username: username,
+      message_type: 'text',
+      content,
+      timestamp: new Date().toISOString()
+    };
 
-      if (!senderId || !gameId || !message) {
-        console.warn('⚠️ Missing fields in chat:send', { senderId, gameId, message });
-        return socket.emit('error', { message: 'Missing required fields' });
-      }
+    // Broadcast to game room
+    io.to(`game_${gameId}`).emit('chat:receive', message);
 
-      const chatEntry = {
-        game_id: gameId,
-        sender_id: senderId,
-        sender_country: senderCountry,
-        message_type: 'text',
-        content: message,
-        timestamp: new Date().toISOString()
-      };
+    // Persist to DB
+    const { error } = await supabase
+      .from('chat_messages')
+      .insert([message]);
 
-      console.log('📝 Inserting chat message into DB:', chatEntry);
-
-      const { error } = await supabase.from('chat_messages').insert([chatEntry]);
-
-      if (error) {
-        console.error('❌ Supabase insert error:', error.message);
-        return socket.emit('error', { message: 'Failed to save message' });
-      }
-
-      console.log(`📡 Emitting chat:receive to country_${senderCountry}`);
-      io.to(`country_${senderCountry}`).emit('chat:receive', chatEntry);
-    } catch (err) {
-      console.error('❌ Socket chat:send error:', err.message);
-      socket.emit('error', { message: 'Failed to send message' });
+    if (error) {
+      console.error('❌ Chat DB insert error:', error.message);
+      socket.emit('error', { message: 'Failed to save message' });
     }
   });
-}
 
-module.exports = initializeChatSocket;
+  // 📜 Optional: Fetch chat history
+  socket.on('chat:history', async () => {
+    const { gameId } = socket;
+    if (!gameId) return socket.emit('error', { message: 'Missing gameId' });
+
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('game_id', gameId)
+      .order('timestamp', { ascending: true });
+
+    if (error) {
+      console.error('❌ Chat history fetch error:', error.message);
+      return socket.emit('error', { message: 'Failed to fetch chat history' });
+    }
+
+    socket.emit('chat:history', data);
+  });
+};

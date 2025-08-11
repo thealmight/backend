@@ -22,7 +22,7 @@ const io = socketIo(server, {
   }
 });
 
-// ---- SOCKET.IO AUTH MIDDLEWARE ----
+// 🔐 Socket.IO Auth Middleware
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
@@ -51,7 +51,7 @@ io.use(async (socket, next) => {
   }
 });
 
-// ---- CORE CONNECTION HANDLER ----
+// 🔌 Core Socket Connection Handler
 io.on('connection', async (socket) => {
   console.log(`🔌 ${socket.username} (${socket.role}) connected from ${socket.country}`);
 
@@ -193,7 +193,7 @@ io.on('connection', async (socket) => {
   });
 });
 
-// ---- START SERVER ----
+// 🚀 Start Server
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
   console.log(`🚀 Econ Empire server running on port ${PORT}`);
@@ -202,7 +202,7 @@ server.listen(PORT, () => {
   console.log(`🌐 CORS: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
 });
 
-// Graceful shutdown
+// 🧹 Graceful Shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully');
   server.close(() => {
