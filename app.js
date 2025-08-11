@@ -40,10 +40,6 @@ console.log('🔍 Loading testRoundRoutes...');
 const testRoundRoutes = require('./routes/testRoundRoutes');
 console.log('✅ testRoundRoutes loaded');
 
-console.log('🔍 Loading gameDataRoutes...');
-const gameDataRoutes = require('./routes/gameDataRoutes');
-console.log('✅ gameDataRoutes loaded');
-
 
 // const testRoutes = require('./routes/test'); // Uncomment if needed
 
@@ -81,8 +77,6 @@ app.use('/api/submissions', submissionRoutes);
 if (!supplyRoutes) console.error('❌ supplyRoutes is undefined');
 app.use('/api/supply', supplyRoutes);
 
-if (!gameDataRoutes) console.error('❌ gameDataRoutes is undefined');
-app.use('/api/gamedata', gameDataRoutes);
 
 if (!testRoundRoutes) console.error('❌ testRoundRoutes is undefined');
 app.use('/api/test-round', testRoundRoutes);
