@@ -5,7 +5,8 @@ const morgan = require('morgan');
 
 // ----- Import routes -----
 console.log('🔍 Loading authRoutes...');
-const { router: authRoutes } = require('./routes/authRouter');
+const authRoutes = require('./routes/authRouter');
+
 
 console.log('✅ authRoutes loaded');
 
