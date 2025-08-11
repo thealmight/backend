@@ -3,6 +3,8 @@ const router = express.Router();
 const chatController = require('../controllers/chatController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
+console.log('📨 Chat routes initialized');
+
 /**
  * POST /chat/message
  * Sends a new chat message
@@ -14,12 +16,16 @@ router.post('/message', authMiddleware, async (req, res) => {
   const senderId = req.user?.id;
   const senderCountry = req.user?.country;
 
+  console.log('📝 POST /chat/message', { gameId, content, senderId, senderCountry });
+
   const result = await chatController.sendMessage({ gameId, senderId, senderCountry, content });
 
   if (!result.success) {
+    console.warn('⚠️ Failed to send message:', result.error);
     return res.status(400).json({ error: result.error });
   }
 
+  console.log('✅ Message sent:', result.data);
   res.status(201).json({ message: 'Message sent', data: result.data });
 });
 
@@ -30,13 +36,18 @@ router.post('/message', authMiddleware, async (req, res) => {
  */
 router.get('/:gameId', authMiddleware, async (req, res) => {
   const { gameId } = req.params;
+  const userId = req.user?.id;
+
+  console.log(`📥 GET /chat/${gameId} requested by user ${userId}`);
 
   const result = await chatController.getChatHistory(gameId);
 
   if (!result.success) {
+    console.warn('⚠️ Failed to fetch chat history:', result.error);
     return res.status(400).json({ error: result.error });
   }
 
+  console.log(`📚 Chat history for ${gameId}: ${result.data.length} messages`);
   res.status(200).json({ messages: result.data });
 });
 
