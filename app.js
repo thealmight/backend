@@ -37,7 +37,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/tariff', tariffRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/production', productionRoutes);
-app.use('/api/submissions', submissionRoutes);
+// app.use('/api/submissions', submissionRoutes);
 app.use('/api/supply', supplyRoutes);
 app.use('/api/gamedata', gameDataRoutes); // More specific path
 app.use('/api/test-round', testRoundRoutes); // More specific path
