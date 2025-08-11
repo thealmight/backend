@@ -41,7 +41,7 @@ app.use('/api/submissions', submissionRoutes);
 app.use('/api/supply', supplyRoutes);
 app.use('/api/gamedata', gameDataRoutes); // More specific path
 app.use('/api/test-round', testRoundRoutes); // More specific path
-app.use('/chat', chatRoutes);
+// app.use('/chat', chatRoutes);
 
 // ----- General Routes -----
 app.get('/', (req, res) => {
