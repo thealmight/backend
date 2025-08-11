@@ -1,37 +1,63 @@
-const supabase = require('../db'); // or wherever your Supabase client lives
+const supabase = require('../db');
 
 /**
- * Initializes chat socket listeners for a connected client.
- * @param {Socket} socket - The connected socket instance.
- * @param {Server} io - The Socket.IO server instance.
+ * Inserts a new chat message into the database.
+ * @param {Object} params
+ * @param {string} params.gameId
+ * @param {string} params.senderId
+ * @param {string} params.senderCountry
+ * @param {string} params.content
+ * @returns {Promise<{ success: boolean, data?: Object, error?: string }>}
  */
-function initializeChatSocket(socket, io) {
-  socket.on('chat:send', async ({ gameId, message }) => {
-    try {
-      const senderId = socket.user?.id;
-      const senderCountry = socket.user?.country;
+async function sendMessage({ gameId, senderId, senderCountry, content }) {
+  if (!gameId || !senderId || !content) {
+    return { success: false, error: 'Missing required fields' };
+  }
 
-      if (!senderId || !gameId || !message) {
-        return socket.emit('error', { message: 'Missing required fields' });
-      }
+  const chatEntry = {
+    game_id: gameId,
+    sender_id: senderId,
+    sender_country: senderCountry,
+    message_type: 'text',
+    content,
+    timestamp: new Date().toISOString()
+  };
 
-      const chatEntry = {
-        game_id: gameId,
-        sender_id: senderId,
-        sender_country: senderCountry,
-        message_type: 'text',
-        content: message,
-        timestamp: new Date().toISOString()
-      };
+  const { data, error } = await supabase.from('chat_messages').insert([chatEntry]).select().single();
 
-      await supabase.from('chat_messages').insert([chatEntry]);
+  if (error) {
+    console.error('❌ sendMessage error:', error.message);
+    return { success: false, error: 'Failed to send message' };
+  }
 
-      io.to(`country_${senderCountry}`).emit('chat:receive', chatEntry);
-    } catch (err) {
-      console.error('❌ Socket chat:send error:', err.message);
-      socket.emit('error', { message: 'Failed to send message' });
-    }
-  });
+  return { success: true, data };
 }
 
-module.exports = initializeChatSocket;
+/**
+ * Retrieves chat history for a given game.
+ * @param {string} gameId
+ * @returns {Promise<{ success: boolean, data?: Array, error?: string }>}
+ */
+async function getChatHistory(gameId) {
+  if (!gameId) {
+    return { success: false, error: 'Missing gameId' };
+  }
+
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('*')
+    .eq('game_id', gameId)
+    .order('timestamp', { ascending: true });
+
+  if (error) {
+    console.error('❌ getChatHistory error:', error.message);
+    return { success: false, error: 'Failed to fetch chat history' };
+  }
+
+  return { success: true, data };
+}
+
+module.exports = {
+  sendMessage,
+  getChatHistory
+};
