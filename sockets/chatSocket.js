@@ -1,4 +1,5 @@
 const supabase = require('../db');
+const gameDataStore = require('../stores/gameDataStore');
 
 /**
  * Handles real-time chat events for a connected socket.
@@ -24,18 +25,16 @@ module.exports = function chatSocket(socket, io) {
       timestamp: new Date().toISOString()
     };
 
-    // Broadcast to game room
+    // Broadcast immediately via Socket.IO
     io.to(`game_${gameId}`).emit('chat:receive', message);
 
-    // Persist to DB
-    const { error } = await supabase
-      .from('chat_messages')
-      .insert([message]);
-
-    if (error) {
-      console.error('❌ Chat DB insert error:', error.message);
-      socket.emit('error', { message: 'Failed to save message' });
-    }
+    // Persist to DB in background
+    supabase.from('chat_messages').insert([message])
+      .then(({ error }) => {
+        if (error) {
+          console.error('❌ Chat DB insert error:', error.message);
+        }
+      });
   });
 
   // 📜 Optional: Fetch chat history

@@ -7,6 +7,7 @@ const supabase = require('./db');
 const { logAudit } = require('./utils/logAudit');
 const emitGameData = require('./utils/emitGameData');
 const app = require('./app');
+const gameDataStore = require('./stores/gameDataStore');
 
 const chatSocket = require('./sockets/chatSocket');
 const gameSocket = require('./sockets/gameSocket');
@@ -55,18 +56,28 @@ io.use(async (socket, next) => {
 io.on('connection', async (socket) => {
   console.log(`🔌 ${socket.username} (${socket.role}) connected from ${socket.country}`);
 
+  // Add user to in-memory store
+  gameDataStore.addUser(socket.userId, {
+    userId: socket.userId,
+    username: socket.username,
+    country: socket.country,
+    role: socket.role,
+    gameId: socket.gameId
+  });
+
   // Join rooms
   socket.join(`country_${socket.country}`);
   socket.join(`game_${socket.gameId}`);
   if (socket.role === 'operator') socket.join('operators');
 
-  // Update online status
+  // Update online status in DB
   try {
     await supabase
       .from('users')
       .update({ socket_id: socket.id, is_online: true })
       .eq('id', socket.userId);
 
+    // Emit user status update from memory
     io.emit('userStatusUpdate', {
       userId: socket.userId,
       username: socket.username,
@@ -74,12 +85,8 @@ io.on('connection', async (socket) => {
       isOnline: true
     });
 
-    const { data: onlineUsers } = await supabase
-      .from('users')
-      .select('id, username, role, country, is_online')
-      .eq('is_online', true);
-
-    socket.emit('onlineUsers', onlineUsers || []);
+    // Emit online users from memory
+    socket.emit('onlineUsers', gameDataStore.getOnlineUsers());
   } catch (error) {
     console.error('Error updating user status:', error);
   }
@@ -170,12 +177,18 @@ io.on('connection', async (socket) => {
   // 🔌 Disconnect handler
   socket.on('disconnect', async () => {
     console.log(`👋 ${socket.username} disconnected`);
+    
+    // Remove user from in-memory store
+    gameDataStore.removeUser(socket.userId);
+    
+    // Update in DB
     try {
       await supabase
         .from('users')
         .update({ is_online: false, socket_id: null })
         .eq('id', socket.userId);
 
+      // Emit user status update from memory
       io.emit('userStatusUpdate', {
         userId: socket.userId,
         username: socket.username,

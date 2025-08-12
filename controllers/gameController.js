@@ -2,6 +2,7 @@ const supabase = require('../db');
 const getSupabaseProfile = require('../services/getSupabaseProfile');
 const { updatePlayerRound } = require('../services/updatePlayerRound');
 const initializeGameData = require('../services/gameDataInitializer');
+const gameDataStore = require('../stores/gameDataStore');
 
 const COUNTRIES = ['USA', 'China', 'Germany', 'Japan', 'India'];
 const PRODUCTS = ['Steel', 'Grain', 'Oil', 'Electronics', 'Textiles'];
@@ -25,6 +26,16 @@ exports.createGame = async (req, res) => {
 
     const initSuccess = await initializeGameData(game.id, COUNTRIES, 1);
     if (!initSuccess) return res.status(500).json({ error: 'Failed to initialize game data' });
+
+    // Initialize in-memory store
+    gameDataStore.initializeGameData(game.id, {
+      production: [],
+      demand: [],
+      tariffRates: [],
+      rounds: [],
+      currentRound: 1,
+      status: 'waiting'
+    });
 
     res.json({
       success: true,
@@ -75,6 +86,10 @@ exports.startGame = async (req, res) => {
       status: 'active'
     }]);
 
+    // Update in-memory store
+    gameDataStore.updateGameStatus(gameId, 'active');
+    gameDataStore.updateGameRound(gameId, 1);
+
     res.json({
       success: true,
       message: 'Game started successfully',
@@ -120,6 +135,9 @@ exports.startNextRound = async (req, res) => {
     const initSuccess = await initializeGameData(gameId, COUNTRIES, nextRound);
     if (!initSuccess) return res.status(500).json({ error: 'Failed to initialize next round data' });
 
+    // Update in-memory store
+    gameDataStore.updateGameRound(gameId, nextRound);
+
     res.json({
       success: true,
       message: `Round ${nextRound} started`,
@@ -153,6 +171,9 @@ exports.endGame = async (req, res) => {
       ended_at: new Date().toISOString()
     }).eq('id', gameId);
 
+    // Update in-memory store
+    gameDataStore.updateGameStatus(gameId, 'ended');
+
     res.json({ success: true, message: 'Game ended successfully' });
   } catch (error) {
     console.error('❌ End game error:', error);
@@ -174,6 +195,11 @@ exports.getGameData = async (req, res) => {
     const { data: demand } = await supabase.from('demand').select('*').eq('game_id', gameId);
     const { data: tariffRates } = await supabase.from('tariff_rates').select('*').eq('game_id', gameId);
     const { data: rounds } = await supabase.from('game_rounds').select('*').eq('game_id', gameId);
+
+    // Update in-memory store
+    gameDataStore.updateProductionData(gameId, production || []);
+    gameDataStore.updateDemandData(gameId, demand || []);
+    gameDataStore.updateTariffRates(gameId, tariffRates || []);
 
     res.json({
       game: {
@@ -211,7 +237,7 @@ exports.getPlayerGameData = async (req, res) => {
       .eq('game_id', gameId)
       .eq('country', playerCountry);
 
-        const { data: demand } = await supabase
+    const { data: demand } = await supabase
       .from('demand')
       .select('*')
       .eq('game_id', gameId)
@@ -244,6 +270,7 @@ exports.getPlayerGameData = async (req, res) => {
     res.status(500).json({ error: 'Failed to get player game data' });
   }
 };
+
 exports.resetGame = async (req, res) => {
   try {
     const { gameId } = req.params;
@@ -265,6 +292,10 @@ exports.resetGame = async (req, res) => {
     // Optional: reinitialize game data
     const initSuccess = await initializeGameData(gameId, COUNTRIES, 1);
     if (!initSuccess) return res.status(500).json({ error: 'Failed to reinitialize game data' });
+
+    // Update in-memory store
+    gameDataStore.updateGameStatus(gameId, 'waiting');
+    gameDataStore.updateGameRound(gameId, 1);
 
     res.json({ success: true, message: 'Game reset successfully' });
   } catch (error) {

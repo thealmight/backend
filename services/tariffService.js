@@ -49,7 +49,7 @@ async function submitTariffChanges(userId, gameId, roundNumber, tariffChanges) {
       }
 
       const { error: upsertError } = await supabase
-        .from('tariffs')
+        .from('tariff_rates')
         .upsert({
           game_id: gameId,
           round_number: roundNumber,
@@ -85,7 +85,7 @@ async function submitTariffChanges(userId, gameId, roundNumber, tariffChanges) {
 async function persistTariffUpdate({ gameId, round, productId, from, to, value }) {
   try {
     const { error } = await supabase
-      .from('tariffs')
+      .from('tariff_rates')
       .upsert({
         game_id: gameId,
         round_number: round,

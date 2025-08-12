@@ -3,6 +3,7 @@
 const supabase = require('../db');
 const getSupabaseProfile = require('../services/getSupabaseProfile');
 const { updatePlayerRound } = require('../services/updatePlayerRound');
+const gameDataStore = require('../stores/gameDataStore');
 
 // 📤 Submit Tariff Changes
 const submitTariffChanges = async (req, res) => {
@@ -83,6 +84,13 @@ const submitTariffChanges = async (req, res) => {
         results.push({ product, toCountry, error: 'Failed to update tariff rate' });
       }
     }
+
+    // Update in-memory store with new tariff data
+    const { data: updatedTariffRates } = await supabase
+      .from('tariff_rates')
+      .select('*')
+      .eq('game_id', gameId);
+    gameDataStore.updateTariffRates(gameId, updatedTariffRates || []);
 
     res.json({ success: true, message: 'Tariff changes processed', results });
   } catch (error) {
@@ -258,16 +266,16 @@ const getTariffMatrix = async (req, res) => {
       matrix[from][to] = {
         rate: tariff.rate,
         roundNumber: tariff.round_number,
-        submittedAt: tariff.submitted_at
       };
     });
 
-    res.json({ product, matrix });
+    res.json(matrix);
   } catch (error) {
     console.error('Get tariff matrix error:', error);
     res.status(500).json({ error: 'Failed to get tariff matrix' });
   }
 };
+
 module.exports = {
   submitTariffChanges,
   getTariffRates,
