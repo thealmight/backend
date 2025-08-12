@@ -27,10 +27,11 @@ router.post('/login', async (req, res) => {
     if (!profile) {
       const username = authData.user.user_metadata?.username || authData.user.email;
       const role = username === 'pavan' ? 'operator' : 'player';
+      const userEmail = authData.user.email;
 
       const { data: newProfile, error: insertError } = await supabase
         .from('users')
-        .insert([{ id: userId, username, email, role }])
+        .insert([{ id: userId, username, email: userEmail, role }])
         .select()
         .single();
       if (insertError) throw insertError;
@@ -85,5 +86,3 @@ router.get('/players', authenticateSupabaseToken, requireOperator, async (req, r
 });
 
 module.exports = router;
-
-

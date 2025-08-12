@@ -18,10 +18,11 @@ exports.loginUser = async (req, res) => {
     if (!profile) {
       const username = supaUser.user_metadata?.username || supaUser.email;
       const role = username === 'pavan' ? 'operator' : 'player';
+      const email = supaUser.email;
 
       const { data: newProfile, error: insertError } = await supabase
         .from('users')
-        .insert([{ id: supaUser.id, username, role }])
+        .insert([{ id: supaUser.id, username, email, role }])
         .select()
         .single();
 
