@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255),
     role VARCHAR(50) NOT NULL DEFAULT 'player', -- 'operator' or 'player'
     country VARCHAR(255),
     is_online BOOLEAN DEFAULT false,

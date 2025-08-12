@@ -2,8 +2,8 @@
 
 const express = require('express');
 const supabase = require('../db');
-const authenticateSupabaseToken = require('../middleware/authenticateSupabaseToken');
-const requireOperator = require('../middleware/requireOperator');
+// const authenticateSupabaseToken = require('../middleware/authenticateSupabaseToken'); // No longer needed
+// const requireOperator = require('../middleware/requireOperator'); // No longer needed
 
 const router = express.Router();
 
@@ -14,77 +14,25 @@ router.post('/login', async (req, res) => {
     if (!username || !password)
       return res.status(400).json({ error: 'Username and password are required' });
 
-    // For demo purposes, we'll use a fixed email based on username
-    // This is because Supabase Auth requires email/password authentication
-    // In a real application, you would have a proper user management system
-    // that might use different authentication methods
-    const email = `${username}@example.com`;
+    // Import our new authentication service
+    const authService = require('../services/authService');
     
-    // Attempt to sign in with Supabase
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ 
-      email, 
-      password 
-    });
+    // Authenticate user with username and password
+    const user = await authService.authenticateUser(username, password);
     
-    // If user doesn't exist, create them
-    if (authError) {
-      // Try to sign up the user
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username: username
-          }
-        }
-      });
-      
-      if (signUpError) {
-        return res.status(401).json({ error: 'Invalid username or password' });
-      }
-      
-      // Use the signup data
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
-      });
-      
-      if (signInError) {
-        return res.status(401).json({ error: 'Invalid username or password' });
-      }
-      
-      authData.user = signInData.user;
-      authData.session = signInData.session;
-    }
-
-    const userId = authData.user.id;
-    let { data: profile } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (!profile) {
-      const role = username === 'pavan' ? 'operator' : 'player';
-      const userEmail = authData.user.email;
-
-      const { data: newProfile, error: insertError } = await supabase
-        .from('users')
-        .insert([{ id: userId, username, email: userEmail, role }])
-        .select()
-        .single();
-      if (insertError) throw insertError;
-      profile = newProfile;
-    }
-
+    // For simplicity, we'll generate a basic token (in a real app, use JWT)
+    const token = Buffer.from(`${user.id}:${username}`).toString('base64');
+    
     res.json({
       success: true,
-      access_token: authData.session.access_token,
-      refresh_token: authData.session.refresh_token,
-      user: profile
+      access_token: token,
+      user: user
     });
   } catch (error) {
-    console.error('Supabase login error:', error);
+    console.error('Login error:', error);
+    if (error.message === 'Invalid username or password') {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -92,10 +40,8 @@ router.post('/login', async (req, res) => {
 // 🚪 LOGOUT
 router.post('/logout', async (req, res) => {
   try {
-    const token = req.headers['authorization']?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'No token provided' });
-
-    await supabase.auth.signOut();
+    // For our simple auth system, logout is just clearing the token on the client side
+    // In a more complex system, we might maintain a blacklist of tokens
     res.json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout error:', error);
@@ -104,18 +50,64 @@ router.post('/logout', async (req, res) => {
 });
 
 // 👤 GET CURRENT USER
-router.get('/me', authenticateSupabaseToken, (req, res) => {
-  res.json(req.user);
+router.get('/me', (req, res) => {
+  try {
+    // Extract token from Authorization header
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+    
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    
+    // Decode token to get user info
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
+    const [userId, username] = decoded.split(':');
+    
+    if (!userId || !username) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    // In a real app, you would fetch the user from the database
+    // For now, we'll just return basic user info
+    res.json({
+      id: userId,
+      username: username,
+      role: username === 'pavan' ? 'operator' : 'player'
+    });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // 🧑‍🤝‍🧑 LIST ALL PLAYERS
-router.get('/players', authenticateSupabaseToken, requireOperator, async (req, res) => {
+router.get('/players', async (req, res) => {
   try {
+    // Extract token from Authorization header
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+    
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    
+    // Decode token to get user info
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
+    const [userId, username] = decoded.split(':');
+    
+    // Check if user is operator
+    if (username !== 'pavan') {
+      return res.status(403).json({ error: 'Access denied. Operator only.' });
+    }
+    
+    // Fetch players from database
     const { data: players, error } = await supabase
       .from('users')
       .select('id, username, email, country, is_online')
       .eq('role', 'player')
       .order('username', { ascending: true });
+      
     if (error) throw error;
     res.json(players);
   } catch (error) {
