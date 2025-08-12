@@ -10,12 +10,50 @@ const router = express.Router();
 // 🔐 LOGIN
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password)
-      return res.status(400).json({ error: 'Email and password are required' });
+    const { username, password } = req.body;
+    if (!username || !password)
+      return res.status(400).json({ error: 'Username and password are required' });
 
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    if (authError) return res.status(401).json({ error: 'Invalid email or password' });
+    // For demo purposes, we'll use a fixed email based on username
+    // In a real application, you would have a proper user management system
+    const email = `${username}@example.com`;
+    
+    // Attempt to sign in with Supabase
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ 
+      email, 
+      password 
+    });
+    
+    // If user doesn't exist, create them
+    if (authError) {
+      // Try to sign up the user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username: username
+          }
+        }
+      });
+      
+      if (signUpError) {
+        return res.status(401).json({ error: 'Invalid username or password' });
+      }
+      
+      // Use the signup data
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
+      
+      if (signInError) {
+        return res.status(401).json({ error: 'Invalid username or password' });
+      }
+      
+      authData.user = signInData.user;
+      authData.session = signInData.session;
+    }
 
     const userId = authData.user.id;
     let { data: profile } = await supabase
@@ -25,7 +63,6 @@ router.post('/login', async (req, res) => {
       .single();
 
     if (!profile) {
-      const username = authData.user.user_metadata?.username || authData.user.email;
       const role = username === 'pavan' ? 'operator' : 'player';
       const userEmail = authData.user.email;
 
