@@ -10,7 +10,9 @@ exports.loginUser = async (req, res) => {
     }
 
     // For demo purposes, we'll use a fixed email based on username
+    // This is because Supabase Auth requires email/password authentication
     // In a real application, you would have a proper user management system
+    // that might use different authentication methods
     const email = `${username}@example.com`;
     
     // Attempt to sign in with Supabase
