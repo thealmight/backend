@@ -10,14 +10,19 @@ const Submission = require('../models/Submission');
 // POST a new submission
 router.post('/', async (req, res) => {
   try {
-    const { round, player, country, tariffs } = req.body;
+    const { gameId, userId, country, tariffs } = req.body;
 
-    if (!round || !player || !country || !tariffs) {
+    if (!gameId || !userId || !country || !tariffs) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    await Submission.create({ round, player, country, tariffs });
-    res.status(201).json({ message: 'Submission saved' });
+    const result = await Submission.createSubmission({ gameId, userId, country, tariffs });
+    
+    if (result.success) {
+      res.status(201).json({ message: 'Submission saved', data: result.data });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
   } catch (err) {
     console.error('❌ Error saving submission:', err.message);
     res.status(500).json({ error: 'Failed to save submission' });
@@ -26,16 +31,20 @@ router.post('/', async (req, res) => {
 
 // GET all submissions (with optional query filtering)
 router.get('/', async (req, res) => {
-  const { round, player, country } = req.query;
-  const where = {};
+  const { gameId, roundNumber } = req.query;
 
-  if (round) where.round = round;
-  if (player) where.player = player;
-  if (country) where.country = country;
+  if (!gameId) {
+    return res.status(400).json({ error: 'gameId is required' });
+  }
 
   try {
-    const submissions = await Submission.findAll({ where });
-    res.json(submissions);
+    const result = await Submission.getSubmissionsByRound({ gameId, roundNumber });
+    
+    if (result.success) {
+      res.json(result.data);
+    } else {
+      res.status(500).json({ error: result.error });
+    }
   } catch (err) {
     console.error('❌ Error fetching submissions:', err.message);
     res.status(500).json({ error: 'Failed to fetch submissions' });

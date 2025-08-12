@@ -4,12 +4,6 @@ const supabase = require('../db');
 const gameDataStore = require('../stores/gameDataStore');
 
 const { updatePlayerRound } = require('../services/updatePlayerRound');
-const {
-  generateProduction,
-  generateDemand,
-  getTariffRates
-} = require('../services/gameDataGenerators');
-const { persistTariffUpdate } = require('../services/tariffService'); // Stub this
 
 module.exports = function gameSocket(socket, io) {
   // 📨 Handle incoming game data request
@@ -64,11 +58,15 @@ module.exports = function gameSocket(socket, io) {
       return socket.emit('error', { message: 'Invalid round number' });
     }
 
-    const success = await updatePlayerRound(socket.userId, newRound);
-    if (success) {
-      socket.emit('roundUpdated', { playerId: socket.userId, newRound });
-    } else {
-      socket.emit('error', { message: 'Failed to update round' });
+    try {
+      const result = await updatePlayerRound(socket.userId, newRound);
+      if (result) {
+        socket.emit('roundUpdated', { playerId: socket.userId, newRound });
+      } else {
+        socket.emit('error', { message: 'Failed to update round' });
+      }
+    } catch (error) {
+      socket.emit('error', { message: 'Failed to update round', error: error.message });
     }
   });
 

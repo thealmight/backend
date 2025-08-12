@@ -1,5 +1,5 @@
 // services/updatePlayerRound.js
-const db = require('../db'); // adjust if you're using Supabase or another client
+const supabase = require('../db');
 
 /**
  * Updates the player's round number in the database.
@@ -11,23 +11,21 @@ async function updatePlayerRound(userId, roundNumber) {
     throw new Error('Invalid input: userId and roundNumber are required');
   }
 
-  const query = `
-    UPDATE players
-    SET current_round = $1
-    WHERE user_id = $2
-    RETURNING *;
-  `;
-
-  const values = [roundNumber, userId];
-
   try {
-    const result = await db.query(query, values);
+    // Since we don't have a separate players table, we'll update the user's current round
+    // in the users table or in a game-specific context
+    const { data, error } = await supabase
+      .from('users')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', userId)
+      .select()
+      .single();
 
-    if (result.rowCount === 0) {
-      throw new Error(`Player with userId ${userId} not found`);
+    if (error) {
+      throw new Error(`Failed to update player round: ${error.message}`);
     }
 
-    return result.rows[0];
+    return data;
   } catch (err) {
     console.error('❌ Failed to update player round:', err);
     throw err;

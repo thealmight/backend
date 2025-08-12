@@ -1,7 +1,6 @@
 // routes/productRoutes.js
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/Product');
 const Submission = require('../models/Submission');
 
 //
@@ -11,8 +10,9 @@ const Submission = require('../models/Submission');
 // GET all products
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.findAll();
-    res.json(products);
+    // Since we don't have a separate products table, we'll return the fixed list
+    const products = ['Steel', 'Grain', 'Oil', 'Electronics', 'Textiles'];
+    res.json(products.map(name => ({ name })));
   } catch (err) {
     console.error('❌ Error fetching products:', err.message);
     res.status(500).json({ error: 'Failed to fetch products' });
@@ -22,16 +22,27 @@ router.get('/', async (req, res) => {
 // GET product usage across all submissions
 router.get('/:name/usage', async (req, res) => {
   const { name } = req.params;
+  const { gameId } = req.query;
+
+  if (!gameId) {
+    return res.status(400).json({ error: 'gameId is required' });
+  }
 
   try {
-    const submissions = await Submission.findAll();
-    const usage = submissions
-      .filter(sub => sub.tariffs && sub.tariffs[name] !== undefined)
+    const result = await Submission.getSubmissionsByRound({ gameId });
+    
+    if (!result.success) {
+      return res.status(500).json({ error: result.error });
+    }
+
+    const usage = result.data
+      .filter(sub => sub.product === name)
       .map(sub => ({
-        round: sub.round,
-        player: sub.player,
-        country: sub.country,
-        tariff: sub.tariffs[name]
+        round: sub.round_number,
+        fromCountry: sub.from_country,
+        toCountry: sub.to_country,
+        rate: sub.rate,
+        submittedAt: sub.submitted_at
       }));
 
     res.json(usage);

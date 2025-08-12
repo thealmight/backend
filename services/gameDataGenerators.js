@@ -1,7 +1,7 @@
 // services/gameDataGenerators.js
 
 const generateCountries = () => {
-  return ['USA', 'China', 'Germany', 'India', 'Brazil'].map((name, index) => ({
+  return ['USA', 'China', 'Germany', 'Japan', 'India'].map((name, index) => ({
     id: index + 1,
     name,
     gdp: Math.floor(Math.random() * 10000 + 5000),
@@ -9,29 +9,33 @@ const generateCountries = () => {
   }));
 };
 
-const generateResources = () => {
-  return ['Oil', 'Steel', 'Food', 'Electronics'].map((type, index) => ({
+const generateProducts = () => {
+  return ['Steel', 'Grain', 'Oil', 'Electronics', 'Textiles'].map((type, index) => ({
     id: index + 1,
     type,
     basePrice: Math.floor(Math.random() * 100 + 50),
   }));
 };
 
-const generateProduction = (countries, resources) => {
+const generateProduction = (countries, products) => {
   return countries.map(country => ({
     countryId: country.id,
-    production: resources.map(resource => ({
-      resourceId: resource.id,
+    countryName: country.name,
+    production: products.map(product => ({
+      productId: product.id,
+      productType: product.type,
       quantity: Math.floor(Math.random() * 1000),
     })),
   }));
 };
 
-const generateDemand = (countries, resources) => {
+const generateDemand = (countries, products) => {
   return countries.map(country => ({
     countryId: country.id,
-    demand: resources.map(resource => ({
-      resourceId: resource.id,
+    countryName: country.name,
+    demand: products.map(product => ({
+      productId: product.id,
+      productType: product.type,
       quantity: Math.floor(Math.random() * 1000),
     })),
   }));
@@ -39,7 +43,7 @@ const generateDemand = (countries, resources) => {
 
 module.exports = {
   generateCountries,
-  generateResources,
+  generateProducts,
   generateProduction,
   generateDemand,
 };
